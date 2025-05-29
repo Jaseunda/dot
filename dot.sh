@@ -1,39 +1,39 @@
 #!/bin/bash
 set -e
 
-echo "### Updating system..."
+# Update system
 sudo pacman -Syu --noconfirm
 
-echo "### Installing NVIDIA drivers and dependencies..."
+# Install NVIDIA drivers and dependencies
 sudo pacman -S --noconfirm nvidia nvidia-utils nvidia-settings linux-headers
 echo "options nvidia-drm modeset=1" | sudo tee /etc/modprobe.d/nvidia.conf
 sudo mkinitcpio -P
 
-echo "### Installing core packages: Hyprland, Kitty, Waybar..."
+# Install core packages
 sudo pacman -S --noconfirm hyprland kitty waybar
 
-echo "### Installing greetd + tuigreet login manager..."
-sudo pacman -S --noconfirm greetd tuigreet
+# Install greetd and tuigreet
+sudo pacman -S --noconfirm greetd greetd-tuigreet
 
-echo "### Configuring greetd for Hyprland login..."
-sudo mkdir -p /etc/greetd
+# Configure greetd
+USERNAME=$(whoami)
 sudo tee /etc/greetd/config.toml > /dev/null <<EOF
 [terminal]
 vt = 1
 
 [default_session]
 command = "tuigreet --cmd Hyprland"
-user = "YOUR_USERNAME"
+user = "$USERNAME"
 EOF
 
-echo "### Enabling greetd login service..."
+# Enable greetd service
 sudo systemctl enable greetd.service
 
-echo "### Installing Bluetooth (bluez)..."
+# Install and enable Bluetooth
 sudo pacman -S --noconfirm bluez bluez-utils
 sudo systemctl enable --now bluetooth.service
 
-echo "### Creating Hyprland config..."
+# Create Hyprland configuration
 mkdir -p ~/.config/hypr
 cat > ~/.config/hypr/hyprland.conf <<EOF
 source=~/.config/hypr/monitors.conf
@@ -45,7 +45,7 @@ bind=SUPER+ENTER,exec,kitty
 bind=SUPER+Q,killactive
 EOF
 
-echo "### Creating monitor auto-config generator..."
+# Create monitor auto-config generator
 cat > ~/.config/hypr/gen_hypr_monitors.sh <<'EOS'
 #!/bin/bash
 CONF="$HOME/.config/hypr/monitors.conf"
@@ -61,7 +61,7 @@ EOS
 
 chmod +x ~/.config/hypr/gen_hypr_monitors.sh
 
-echo "### Adding monitor config to bash_profile to run before Hyprland starts..."
+# Add monitor config to bash_profile
 echo '~/.config/hypr/gen_hypr_monitors.sh' >> ~/.bash_profile
 
-echo "### DONE! Reboot and Hyprland will launch with tuigreet."
+echo "Setup complete. Please reboot to start Hyprland with tuigreet."
