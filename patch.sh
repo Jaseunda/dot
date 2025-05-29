@@ -4,19 +4,14 @@ set -euo pipefail
 echo "→ Installing NVIDIA 470‑series DKMS driver and build tools…"
 sudo pacman -S --needed --noconfirm nvidia-470xx-dkms git base-devel
 
-echo "→ Cloning nvidia-470xx-utils AUR repo…"
+echo "→ Cloning CachyOS-PKGBUILDS (with 6.14 patch)…"
 BUILD_DIR="$(mktemp -d)"
-git clone https://aur.archlinux.org/nvidia-470xx-utils.git "$BUILD_DIR/nvidia-470xx-utils"
-cd "$BUILD_DIR/nvidia-470xx-utils"
+git clone https://github.com/CachyOS/CachyOS-PKGBUILDS.git "$BUILD_DIR/CachyOS-PKGBUILDS"
 
-echo "→ Downloading the Linux 6.14 patch…"
-curl -fsSL \
-  https://raw.githubusercontent.com/CachyOS/CachyOS-PKGBUILDS/master/nvidia/nvidia-470xx-utils/kernel-6.14.patch \
-  -o kernel-6.14.patch                     # fix for 6.14‑rc1+  [oai_citation:0‡GitHub](https://github.com/CachyOS/CachyOS-PKGBUILDS/blob/master/nvidia/nvidia-470xx-utils/kernel-6.14.patch?utm_source=chatgpt.com)
-
-echo "→ Applying patch and building…"
-git apply kernel-6.14.patch
-makepkg -si --noconfirm                  # builds & installs patched utils
+echo "→ Building nvidia-470xx-utils from CachyOS PKGBUILDS…"
+cd "$BUILD_DIR/CachyOS-PKGBUILDS/nvidia/nvidia-470xx-utils"
+# This directory already contains kernel-6.14.patch to fix wlroots’ NVIDIA backend crashes  [oai_citation:0‡GitHub](https://github.com/CachyOS/CachyOS-PKGBUILDS/blob/master/nvidia/nvidia-470xx-utils/kernel-6.14.patch?utm_source=chatgpt.com)
+makepkg -si --noconfirm
 
 echo "→ Enabling NVIDIA DRM modesetting…"
 echo 'options nvidia-drm modeset=1' | sudo tee /etc/modprobe.d/nvidia-drm.conf
