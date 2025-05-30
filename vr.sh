@@ -3,9 +3,10 @@ set -euo pipefail
 
 echo "===== RAM BOOSTER FOR HYPRLAND (Nouveau) — 8 GB EDITION ====="
 
-# 1) zram: use half your RAM (8 GB) for compressed swap
+# 1) Install & enable zram-generator (8 GB swap) via the correct systemd unit
 echo "[1/5] Installing & enabling zram-generator (8 GB swap)…"
 sudo pacman -S --needed --noconfirm zram-generator
+
 cat <<EOF | sudo tee /etc/systemd/zram-generator.conf
 [zram0]
 # half of 16 GB = 8 GB 
@@ -13,7 +14,11 @@ zram-size = ram / 2
 compression-algorithm = lz4
 max-comp-streams = 4
 EOF
-sudo systemctl enable --now zram-swap@zram0.service
+
+# **Use the correct unit name:**
+echo "[→] Enabling systemd-zram-setup@zram0.service…"
+sudo systemctl daemon-reload
+sudo systemctl enable --now systemd-zram-setup@zram0.service
 
 # 2) tmpfs: mount /tmp in RAM (6 GB) and /var/log (1 GB)
 echo "[2/5] Configuring tmpfs mounts (/tmp → 6 GB, /var/log → 1 GB)…"
@@ -52,11 +57,11 @@ echo
 echo "🎉 All done! Please reboot now to apply everything:"
 echo "    sudo reboot"
 echo
-echo "After reboot, Hyprland will have:"
-echo "  • 8 GB compressed swap in RAM"
+echo "After reboot, you’ll have:"
+echo "  • 8 GB compressed swap in RAM via systemd-zram-setup@zram0"
 echo "  • /tmp in 6 GB RAM‑backed tmpfs"
 echo "  • /var/log in 1 GB tmpfs"
 echo "  • An 8 GB RAM‑disk at ~/ramdisk for your heaviest workloads"
 echo "  • Preloaded binaries and tuned VM cache"
 echo
-echo "That should make 4 K @ 75 Hz on software rendering feel as buttery‑smooth as possible!"
+echo "That should make 4 K @ 75 Hz on software rendering feel buttery‑smooth!"
