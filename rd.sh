@@ -10,14 +10,12 @@ for CARD in /dev/dri/card*; do
     break
   fi
 done
-
 if [[ -z "$NOUVEAU_CARD" ]]; then
   echo "❌ Could not find a nouveau‑driven /dev/dri/card*. Exiting."
   exit 1
 fi
 
-# 2) Detect primary monitor and full resolution
-#    expects output like: DP-1: 3440x1440+0+0 ...
+# 2) Detect your primary monitor name and full resolution
 MONITOR=$(hyprctl monitors | head -n1 | awk -F': ' '{print $1}')
 RES=$(hyprctl monitors | head -n1 | awk '{print $2}')  # e.g. 3440x1440
 FULL_W=${RES%x*}
@@ -28,18 +26,19 @@ INNER_W=$(( FULL_W * 75 / 100 ))   # 2580
 INNER_H=$(( FULL_H * 75 / 100 ))   # 1080
 SCALE=$(awk "BEGIN {printf \"%.4f\", $FULL_W / $INNER_W}")
 
-echo "▶ Using GPU: $NOUVEAU_CARD"
-echo "▶ Monitor: $MONITOR at ${FULL_W}×${FULL_H}@75Hz"
-echo "▶ Internal render: ${INNER_W}×${INNER_H} (scale factor ${SCALE})"
+echo "▶ GPU device: $NOUVEAU_CARD"
+echo "▶ Monitor:    $MONITOR @ ${FULL_W}×${FULL_H} 75 Hz"
+echo "▶ Render:     ${INNER_W}×${INNER_H} (scale ${SCALE})"
 
-# 4) Launch under Gamescope
+# 4) Use nwg-displays to apply the mode and scale
+nwg-displays set "$MONITOR" \
+  mode "${FULL_W}x${FULL_H}@75" \
+  scale 0.75 \
+  refresh 75
+
+# 5) Export Wayland backend vars
 export WLR_BACKEND=drm
 export WLR_DRM_DEVICES="$NOUVEAU_CARD"
 
-exec gamescope \
-  --width "$INNER_W" \
-  --height "$INNER_H" \
-  --scale "$SCALE" \
-  --refresh 75 \
-  --monitor "$MONITOR" \
-  Hyprland
+# 6) Launch Hyprland
+exec Hyprland
